@@ -1,11 +1,11 @@
 class IDEA:
     def __init__(self, key):
         self._keys = None
-        self.gen_keys(key)
+        self.pembangkitan_keys(key)
 
 
-    # Multiplication modulo
-    def mul_mod(self, a, b):
+    # Perkalian modulo (Multiplication)
+    def kali_mod(self, a, b):
         assert 0 <= a <= 0xFFFF
         assert 0 <= b <= 0xFFFF
 
@@ -23,20 +23,20 @@ class IDEA:
         return r
 
 
-    # Addition modulo
-    def add_mod(self, a, b):
+    # Penambahan modulo (Addition)
+    def tambah_mod(self, a, b):
         return (a + b) % 0x10000
 
 
-    # Additive inverse
-    def add_inv(self, key):
+    # Penambahan inverse (Additive)
+    def tambah_inv(self, key):
         u = (0x10000 - key) % 0xFFFF
         assert 0 <= u <= 0x10000 - 1
         return u
 
 
-    # Multiplicative inverse
-    def mul_inv(self, key):
+    # Perkalian inverse (Multiplicative)
+    def kali_inv(self, key):
         a = 0x10000 + 1
         if key == 0:
             return 0
@@ -64,23 +64,23 @@ class IDEA:
             return y
 
 
-    # Encryption / Decryption round
-    def round(self, p1, p2, p3, p4, keys):
+    # Putaran Enkripsi / Dekripsi
+    def putaran(self, p1, p2, p3, p4, keys):
         k1, k2, k3, k4, k5, k6 = keys
 
-        # Step 1
-        p1 = self.mul_mod(p1, k1)
-        p4 = self.mul_mod(p4, k4)
-        p2 = self.add_mod(p2, k2)
-        p3 = self.add_mod(p3, k3)
-        # Step 2
+        # Tahap 1
+        p1 = self.kali_mod(p1, k1)
+        p4 = self.kali_mod(p4, k4)
+        p2 = self.tambah_mod(p2, k2)
+        p3 = self.tambah_mod(p3, k3)
+        # Tahap 2
         x = p1 ^ p3
-        t0 = self.mul_mod(k5, x)
+        t0 = self.kali_mod(k5, x)
         x = p2 ^ p4
-        x = self.add_mod(t0, x)
-        t1 = self.mul_mod(k6, x)
-        t2 = self.add_mod(t0, t1)
-        # Step 3
+        x = self.tambah_mod(t0, x)
+        t1 = self.kali_mod(k6, x)
+        t2 = self.tambah_mod(t0, t1)
+        # Tahap 3
         p1 = p1 ^ t1
         p4 = p4 ^ t2
         a = p2 ^ t2
@@ -90,8 +90,8 @@ class IDEA:
         return p1, p2, p3, p4
 
 
-    # Key generation
-    def gen_keys(self, key):
+    # Pembangkitan kunci (Key generation)
+    def pembangkitan_keys(self, key):
         assert 0 <= key < (1 << 128)
         modulus = 1 << 128
 
@@ -103,87 +103,87 @@ class IDEA:
 
         keys = []
         for i in range(9):
-            round_keys = sub_keys[6 * i: 6 * (i + 1)]
-            keys.append(tuple(round_keys))
+            putaran_keys = sub_keys[6 * i: 6 * (i + 1)]
+            keys.append(tuple(putaran_keys))
         self._keys = tuple(keys)
         
 
-    # Encryption
-    def encrypt(self, plain):
+    # Enkripsi
+    def enkrip(self, plain):
         p1 = (plain >> 48) & 0xFFFF
         p2 = (plain >> 32) & 0xFFFF
         p3 = (plain >> 16) & 0xFFFF
         p4 = plain & 0xFFFF
         
-        # All 8 rounds
+        # Keseluruhan 8 putaran
         for i in range(8):
             keys = self._keys[i]
-            p1, p2, p3, p4 = self.round(p1, p2, p3, p4, keys)
+            p1, p2, p3, p4 = self.putaran(p1, p2, p3, p4, keys)
         
-        # Final output transformation
+        # Hasil akhir transformasi
         k1, k2, k3, k4, x, y = self._keys[8]
-        y1 = self.mul_mod(p1, k1)
-        y2 = self.add_mod(p3, k2)
-        y3 = self.add_mod(p2, k3)
-        y4 = self.mul_mod(p4, k4)
+        y1 = self.kali_mod(p1, k1)
+        y2 = self.tambah_mod(p3, k2)
+        y3 = self.tambah_mod(p2, k3)
+        y4 = self.kali_mod(p4, k4)
 
-        encrypted = (y1 << 48) | (y2 << 32) | (y3 << 16) | y4
-        return encrypted
+        enkripsi = (y1 << 48) | (y2 << 32) | (y3 << 16) | y4
+        return enkripsi
 
 
-    # Decryption
-    def decrypt(self, encrypted):
-        p1 = (encrypted >> 48) & 0xFFFF
-        p2 = (encrypted >> 32) & 0xFFFF
-        p3 = (encrypted >> 16) & 0xFFFF
-        p4 = encrypted & 0xFFFF
+    # Dekripsi
+    def dekrip(self, enkripsi):
+        p1 = (enkripsi >> 48) & 0xFFFF
+        p2 = (enkripsi >> 32) & 0xFFFF
+        p3 = (enkripsi >> 16) & 0xFFFF
+        p4 = enkripsi & 0xFFFF
 
-        # Round 1
+        # Putaran 1
         keys = self._keys[8]
-        k1 = self.mul_inv(keys[0])
+        k1 = self.kali_inv(keys[0])
         if k1 < 0:
             k1 = 0x10000 + 1 + k1
-        k2 = self.add_inv(keys[1])
-        k3 = self.add_inv(keys[2])
-        k4 = self.mul_inv(keys[3])
+        k2 = self.tambah_inv(keys[1])
+        k3 = self.tambah_inv(keys[2])
+        k4 = self.kali_inv(keys[3])
         if k4 < 0:
             k4 = 0x10000 + 1 + k4
         keys = self._keys[7]
         k5 = keys[4]
         k6 = keys[5]
         keys = [k1, k2, k3, k4, k5, k6]
-        p1, p2, p3, p4 = self.round(p1, p2, p3, p4, keys)
+        p1, p2, p3, p4 = self.putaran(p1, p2, p3, p4, keys)
 
-        # Other rounds
+        # Putaran lainnya
         for i in range(1, 8):
             keys = self._keys[8-i]
-            k1 = self.mul_inv(keys[0])
+            k1 = self.kali_inv(keys[0])
             if k1 < 0:
                 k1 = 0x10000 + 1 + k1
-            k2 = self.add_inv(keys[2])
-            k3 = self.add_inv(keys[1])
-            k4 = self.mul_inv(keys[3])
+            k2 = self.tambah_inv(keys[2])
+            k3 = self.tambah_inv(keys[1])
+            k4 = self.kali_inv(keys[3])
             if k4 < 0:
                 k4 = 0x10000 + 1 + k4
             keys = self._keys[7-i]
             k5 = keys[4]
             k6 = keys[5]
             keys = [k1, k2, k3, k4, k5, k6]
-            p1, p2, p3, p4 = self.round(p1, p2, p3, p4, keys)
+            p1, p2, p3, p4 = self.putaran(p1, p2, p3, p4, keys)
         
-        # Final output transformation
+        # Hasil akhir transformasi
         keys = self._keys[0]
-        k1 = self.mul_inv(keys[0])
+        k1 = self.kali_inv(keys[0])
         if k1 < 0:
             k1 = 0x10000 + 1 + k1
-        k2 = self.add_inv(keys[1])
-        k3 = self.add_inv(keys[2])
-        k4 = self.mul_inv(keys[3])
+        k2 = self.tambah_inv(keys[1])
+        k3 = self.tambah_inv(keys[2])
+        k4 = self.kali_inv(keys[3])
         if k4 < 0:
             k4 = 0x10000 + 1 + k4
-        y1 = self.mul_mod(p1, k1)
-        y2 = self.add_mod(p3, k2)
-        y3 = self.add_mod(p2, k3)
-        y4 = self.mul_mod(p4, k4)
-        decrypted = (y1 << 48) | (y2 << 32) | (y3 << 16) | y4
-        return decrypted
+        y1 = self.kali_mod(p1, k1)
+        y2 = self.tambah_mod(p3, k2)
+        y3 = self.tambah_mod(p2, k3)
+        y4 = self.kali_mod(p4, k4)
+        dekripsi = (y1 << 48) | (y2 << 32) | (y3 << 16) | y4
+        return dekripsi
